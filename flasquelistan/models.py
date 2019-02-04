@@ -364,3 +364,25 @@ class ProfilePicture(db.Model):
 
     user = db.relationship('User', foreign_keys=user_id,
                            backref='profile_pictures')
+
+
+class EventResponses(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user = db.relationship('User', foreign_keys="user.id",
+                           backref='event_responses')
+    user = db.relationship('Event', foreign_keys="event.id",
+                           backref='event_responses')
+    notes = db.Column(db.String(512))
+    payed = db.Column(db.Boolean, default=False, nullable=False)
+    
+
+class Event(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(256), nullable=False)
+    description = db.Column(db.String(2048), nullable=False, default="")
+    cost = db.Column(db.Integer, default=0, nullable = True) #Ören, 1/100 SEK
+    start_date = db.Column(db.DateTime, nullable=False, default=datetime.datetime.utcnow)
+    end_date = db.Column(db.DateTime, nullable=False, default=datetime.datetime.utcnow)
+    last_signup = db.Column(db.DateTime, nullable=False, default=datetime.datetime.utcnow)
+    attending = db.relationship('User', secondary="EventRresponses", backref='events')
+

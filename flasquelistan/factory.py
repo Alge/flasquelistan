@@ -83,6 +83,8 @@ def register_cli(app):
 
 def populate_testdb():
     from flasquelistan import models
+    from datetime import datetime, timedelta
+
     monty = models.User(
         email='monty@python.tld',
         first_name='Monty',
@@ -174,6 +176,25 @@ def populate_testdb():
     barack.group = bass
 
     models.db.session.commit()
+
+    # Init some events
+
+    christmas_party = models.Event(
+        name="Christmas party 2020",
+        description="Woop Woop, christmas!",
+        cost=100,
+        start_date=datetime(2020, 12, 24, 18),
+        end_date=start_date + timedelta(hours=4),
+        last_signup=start_date - timedelta(days=7),
+    )
+    new_year_party = models.Event(
+        name="new year party 2020-2021",
+        description="Woop Woop, new year!",
+        cost=180.9,
+        start_date=datetime(2020, 12, 24, 18),
+        end_date=start_date + timedelta(hours=24),
+        last_signup=start_date - timedelta(days=7),
+    )
 
 
 def init_db(app):
