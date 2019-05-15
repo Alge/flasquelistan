@@ -2,11 +2,11 @@
 
 {% set active_page = "streque" %}
 
-{% from "macros.html" import profile_picture %}
+{% from "macros.html" import profile_picture, form_entry %}
 
 {% block body %}
 <div class="profile">
-  {{ profile_picture(user) }}
+  {{ profile_picture(user, with_link=True) }}
 
   <div>
     <h2>
@@ -15,6 +15,10 @@
       {{ user.last_name }}
     </h2>
 
+    <p>
+      <a href="{{ url_for('strequelistan.edit_profile', user_id=user.id) }}">Redigera profil</a>
+    </p>
+
     <dl>
       <dt>E-postadress</dt>
       <dd><a href="mailto:{{ user.email }}">{{ user.email }}</a></dd>
@@ -22,26 +26,35 @@
       {% if user.phone %}
       <dt>Telefonnummer</dt>
       <dd>
-      {% if user.formatted_phone %}
-      <a href="tel:{{ user.formatted_phone }}">{{ user.formatted_phone }}</a>
+      {% if user.formatted_phone() %}
+      <a href="tel:{{ user.formatted_phone(e164=True) }}">{{ user.formatted_phone() }}</a>
       {% else %}
       {{ user.phone }}
       {% endif %}
       </dd>
       {% endif %}
-      </br>
-      <a href="/profile/{{ user.id }}.vcf" download>Ladda ner kontaktfil</a>
-      {% if user == current_user or current_user.is_admin %}
+    </dl>
+
+    <p>
+      <a href="{{ url_for('strequelistan.user_vcard', user_id=user.id) }}" download>Ladda ner kontaktfil</a>
+    </p>
+
+    <form class="upload-and-set-profile-picture" method="POST" enctype="multipart/form-data">
+      {{ profile_picture_form.csrf_token }}
+      {{ form_entry(profile_picture_form.upload) }}
+      <div class="form-field">
+        <button>Spara</button>
+      </div>
+    </form>
+
+    {% if user == current_user or current_user.is_admin %}
+    <dl>
       <dt>Saldo</dt>
       <dd>{{ user.formatted_balance }}</dd>
 
-      <p>
-        <a href="{{ url_for('strequelistan.edit_profile', user_id=user.id) }}">Redigera profil</a>
-      </p>
-
-      <dt>Historik</a></dt>
-      {% if transactions.all() %}
+      <dt>Historik</dt>
       <dd>
+      {% if transactions.all() %}
       <div class="table-wrap">
         <table class="transaction-history">
           {% for transaction in transactions %}
@@ -66,12 +79,12 @@
         </table>
       </div>
       {% else %}
-      <p>Det är tomt här, strequa mer!</p>
+      Det är tomt här, strequa mer!
       {% endif %}
-      <p><a href="{{ url_for('strequelistan.user_history', user_id=user.id) }}">All historik</a></p>
       </dd>
-      {% endif %}
     </dl>
+    <p><a href="{{ url_for('strequelistan.user_history', user_id=user.id) }}">All historik</a></p>
+    {% endif %}
   </div>
 </div>
 {% endblock %}

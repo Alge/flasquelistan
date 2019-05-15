@@ -3,7 +3,6 @@ import flask_login
 from sqlalchemy.sql.expression import func, not_
 from flasquelistan import forms, models, util
 from flasquelistan.views import auth
-from flask import Response
 
 mod = flask.Blueprint('strequelistan', __name__)
 
@@ -141,7 +140,7 @@ def history():
     return flask.render_template('history.html', streques=streques)
 
 
-@mod.route('/profile/<int:user_id>/')
+@mod.route('/profile/<int:user_id>/', methods=['GET', 'POST'])
 def show_profile(user_id):
     user = models.User.query.get_or_404(user_id)
 
@@ -150,8 +149,32 @@ def show_profile(user_id):
                     .order_by(models.Transaction.timestamp.desc())
                     .limit(10))
 
-    return flask.render_template('show_profile.html', user=user,
-                                 transactions=transactions)
+    profile_picture_form = forms.UploadProfilePictureForm()
+
+    if profile_picture_form.validate_on_submit():
+        if profile_picture_form.upload.data:
+            filename = util.image_uploads.save(
+                profile_picture_form.upload.data
+            )
+            profile_picture = models.ProfilePicture(
+                filename=filename,
+                user_id=user.id
+            )
+
+            user.profile_picture = profile_picture
+
+            models.db.session.add(profile_picture)
+            models.db.session.commit()
+
+            flask.flash("Profilbilden har ändrats!", 'success')
+
+    elif profile_picture_form.is_submitted():
+        forms.flash_errors(profile_picture_form)
+
+    return flask.render_template('show_profile.html',
+                                 user=user,
+                                 transactions=transactions,
+                                 profile_picture_form=profile_picture_form)
 
 
 @mod.route('/profile/<int:user_id>/history')
@@ -169,10 +192,19 @@ def user_history(user_id):
 
     return flask.render_template('user_history.html', user=user,
                                  transactions=transactions)
-@mod.route('/profile/<int:user_id>.vcf')
+
+
+@mod.route('/profile/<int:user_id>/vcard')
 def user_vcard(user_id):
     user = models.User.query.get_or_404(user_id)
-    return Response(user.vcard, mimetype='text/vcard')
+    response = flask.make_response(user.vcard)
+    response.mimetype = 'text/vcard'
+    response.headers['Content-Disposition'] = (
+        'attachment; filename="{}_{}.vcf"'
+        .format(user.first_name, user.last_name)
+    )
+    return response
+
 
 @mod.route('/profile/<int:user_id>/edit/', methods=['GET', 'POST'])
 def edit_profile(user_id):
@@ -297,11 +329,18 @@ def change_email_or_password(user_id):
     user = models.User.query.get_or_404(user_id)
     current_user = flask_login.current_user
 
-    if current_user.id != user.id and not current_user.is_admin:
-        flask.flash("Du får bara redigera din egen profil! ಠ_ಠ", 'error')
-        return flask.redirect(flask.url_for('.show_profile', user_id=user_id))
+    if current_user.id != user.id:
+        if current_user.is_admin:
+            form = forms.ChangeEmailOrPasswordForm(obj=user, user=user,
+                                                   nopasswordvalidation=True)
 
-    form = forms.ChangeEmailOrPasswordForm(obj=user, user=user)
+        else:
+            flask.flash("Du får bara redigera din egen profil! ಠ_ಠ", 'error')
+            return flask.redirect(flask.url_for('.show_profile',
+                                                user_id=user_id))
+
+    else:
+        form = forms.ChangeEmailOrPasswordForm(obj=user, user=user)
 
     if form.validate_on_submit():
         if form.email.data != user.email:
