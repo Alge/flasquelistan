@@ -17,6 +17,11 @@ def check_auth(username, password):
     """This function is called to check if a username /
     password combination is valid.
     """
+    user = models.User.query.filter_by(email=username)
+    if user != None:
+        return True
+    else:
+        return False
     return username == 'admin' and password == 'secret'
 
 def check_admin_auth(username, password):
