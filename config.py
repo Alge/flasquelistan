@@ -25,3 +25,5 @@ SMTP_STARTTLS_PORT = 587
 SMTP_USERNAME = 'webmaster@example.com'
 SMTP_PASSWORD = 'smtpsecretpassword'
 SMTP_SENDADDR = 'webmaster@example.com'
+
+TEMPLATES_AUTO_RELOAD = True
