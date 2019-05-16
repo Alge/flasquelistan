@@ -37,7 +37,6 @@ class User(flask_login.UserMixin, db.Model):
     transactions = db.relationship('Transaction',
                                    back_populates='user',
                                    lazy='dynamic')
-
     profile_picture = db.relationship('ProfilePicture',
                                       foreign_keys=profile_picture_id)
 
@@ -133,11 +132,11 @@ class User(flask_login.UserMixin, db.Model):
 
         return None
 
-    def strequa(self, article, made_by):
+    def strequa(self, article):
         value = article.value
 
         streque = Streque(value=value, text=article.name, user_id=self.id,
-                          standardglas=article.standardglas, made_by=made_by)
+                          standardglas=article.standardglas)
         self.balance -= value
 
         db.session.add(streque)
@@ -236,7 +235,6 @@ class User(flask_login.UserMixin, db.Model):
     def __str__(self):
         return "{} {} <{}>".format(self.first_name, self.last_name, self.email)
 
-
 class RegistrationRequest(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(254))
@@ -285,14 +283,12 @@ class Transaction(db.Model):
     text = db.Column(db.String(50))
     value = db.Column(db.Integer, nullable=False)  # Ören
     voided = db.Column(db.Boolean, default=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    made_by_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     timestamp = db.Column(db.DateTime, nullable=False,
                           default=datetime.datetime.utcnow)
     type = db.Column(db.String(50))
 
-    user = db.relationship('User', back_populates='transactions', foreign_keys=[user_id])
-    made_by = db.relationship('User', foreign_keys=[made_by_id])
+    user = db.relationship('User', back_populates='transactions')
 
     __mapper_args__ = {
         'polymorphic_identity': 'transaction',
@@ -360,13 +356,15 @@ class Quote(db.Model):
     def __str__(self):
         return "{}... — {}".format(self.text[:20], self.who[:10] or "<None>")
 
-    def to_json(self):
+    @property
+    def json(self):
         data = {}
         data['id'] = self.id
         data['text'] = self.text
         data['who'] = self.who
-        data['timestamp'] = self.timestamp.isoformat()
+        data['timestamp'] =  self.timestamp.isoformat()
         return data
+
 
 class ProfilePicture(db.Model):
     id = db.Column(db.Integer, primary_key=True)
